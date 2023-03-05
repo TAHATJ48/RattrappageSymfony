@@ -30,39 +30,45 @@ class CouponCommand extends Command
         parent::__construct($name);
     }
 
-    protected function execute(EntityManagerInterface $entityManager,coupon $coupon,InputInterface $input, OutputInterface $output): int
+    protected function execute(EntityManagerInterface $entityManager, coupon $coupon, InputInterface $input, OutputInterface $output): int
     {
         // Finding All Clients
 
         $clients = $this->clientRepository->findAll();
+        $lastyear = date("Y-m-d", strtotime("-365 days"));
 
 
         foreach ($clients as $client) {
-            // Generating Coupon
-            $chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-            $yearcoupon = "";
-            for ($i = 0; $i < 10; $i++) {
-                $yearcoupon .= $chars[mt_rand(0, strlen($chars) - 1)];
+            // Finding Client Older Than a year
+            // I couldn't figure out the specific query builder to use
+
+            if ($client->getCreatedAt() > $lastyear) {
+                // Generating Coupon
+                $chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+                $yearcoupon = "";
+                for ($i = 0; $i < 10; $i++) {
+                    $yearcoupon .= $chars[mt_rand(0, strlen($chars) - 1)];
+                }
+
+                $coupon = new Coupon;
+                $coupon->setCode($yearcoupon);
+                $coupon->setPercentageOff(30);
+                $entityManager->persist($coupon);
+                $entityManager->flush();
+
+                // Sending Email
+
+                $emailadress = $client->getEmail();
+
+                $email = (new Email())
+                    ->from('aaa.bbb@ccc.com')
+                    ->to($emailadress)
+                    ->subject('Your Coupon to celebrate over a year with us')
+                    ->text($yearcoupon)
+                    ->html('<p>HeeHee</p>');
+
+                $this->mailer->send($email);
             }
-
-            $coupon = new Coupon;
-            $coupon->setCode($yearcoupon);     
-            $coupon->setPercentageOff(30);    
-            $entityManager->persist($coupon);
-            $entityManager->flush();
-
-            // Sending Email
-
-            $emailadress = $client->getEmail();
-
-            $email = (new Email())
-                ->from('aaa.bbb@ccc.com')
-                ->to($emailadress)
-                ->subject('Your Coupon to celebrate over a year with us')
-                ->text($yearcoupon)
-                ->html('<p>HeeHee</p>');
-
-            $this->mailer->send($email);
         }
 
         $io = new SymfonyStyle($input, $output);
