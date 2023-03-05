@@ -73,7 +73,7 @@ class CouponCommand extends Command
 
         $io = new SymfonyStyle($input, $output);
 
-        $io->success(sprintf('Vouchers Sent'));
+        $io->success(sprintf('Coupons Sent To All The Clients Older Than A Year!'));
 
         return Command::SUCCESS;
     }
